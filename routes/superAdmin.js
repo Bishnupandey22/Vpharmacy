@@ -59,16 +59,16 @@ router.delete("/deleteInventory/:inventoryId", superAdminController.deleteInvent
 router.post("/createBilling", superAdminController.createAndUpdateBiling)
 
 // View Biling
-router.get("/viewBilling/:billingId", auth.checkAdminAuth, superAdminController.ViewBilling)
+router.get("/viewBilling/:billingId", superAdminController.ViewBilling)
 
 // Delete Billing
-router.delete("/deleteBilling/:billingId", auth.checkAdminAuth, superAdminController.deleteBilling)
+router.delete("/deleteBilling/:billingId", superAdminController.deleteBilling)
 
 // get list of billing with pagination
-router.get("/getListOfBillingWithPagination", auth.checkAdminAuth, superAdminController.getListOfBillingWithPagination)
+router.get("/getListOfBillingWithPagination", superAdminController.getListOfBillingWithPagination)
 
 // get List Of Billing Without Pagination
-router.get("/getListOfBilling", auth.checkAdminAuth, superAdminController.getListOfBilling)
+router.get("/getListOfBilling", superAdminController.getListOfBilling)
 
 // sort Billing data 
 router.get("/sortBilling", superAdminController.sortBilling)
