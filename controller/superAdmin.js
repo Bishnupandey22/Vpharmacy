@@ -310,7 +310,7 @@ exports.createAndUpdateInventory = async (req, res) => {
         // cost per medicine calculation
         let calculatedCostPerMedicine = parseFloat(mrp / totalquantityOfMedicineinAPack).toFixed(2)
 
-
+        let calculatedTotalMedicineInStoke = totalquantityOfMedicineinAPack * strip
         if (id) {
             const isExists = await inventoryModel.findOne({ _id: id })
             if (!isExists) {
@@ -343,6 +343,7 @@ exports.createAndUpdateInventory = async (req, res) => {
                         costPerMedicine: calculatedCostPerMedicine,
                         expiryDate: expiryDate,
                         minimumStock: minimumStock,
+                        totalMedicineInStoke: calculatedTotalMedicineInStoke
                     }
                 }
             )
@@ -379,6 +380,7 @@ exports.createAndUpdateInventory = async (req, res) => {
                 // customerDiscount: customerDiscount,
                 expiryDate: expiryDate,
                 minimumStock: minimumStock,
+                totalMedicineInStoke: calculatedTotalMedicineInStoke,
             })
             if (!createData) {
                 return res.status(403).send({
@@ -521,6 +523,22 @@ exports.createAndUpdateBiling = async (req, res) => {
                     message: "Medicine not found"
                 })
             }
+            let medicineStoke = medicine.totalMedicineInStoke - med.quantity
+            console.log("medicineStoke", medicineStoke)
+
+            let updatedMed = await inventoryModel.findOneAndUpdate(
+                { _id: med.medicineId },
+                { $set: { totalMedicineInStoke: medicineStoke } },
+                { new: true }
+            );
+
+            if (!updatedMed) {
+                return res.status(400).send({
+                    message: "Error while updating the medicine stock"
+                });
+            }
+
+            // await medicine.save();
         }
 
 
@@ -594,6 +612,56 @@ exports.createAndUpdateBiling = async (req, res) => {
         console.log(error, "Error")
         return res.status(500).send({
             message: "Internal server Error"
+        })
+    }
+}
+
+// Cancel Bill
+exports.cancelBill = async (req, res) => {
+    try {
+        const { billId } = req.params
+        const bill = await Billing.findById(billId)
+        if (!bill) {
+            return res.status(404).send({
+                message: "Bill Not Found"
+            })
+        }
+        for (const med of bill.medicines) {
+            const medicine = await inventoryModel.findById(med.medicineId)
+            if (!medicine) {
+                return res.status(404).send({
+                    message: "Medicine Not Found"
+                })
+            }
+            let updatedStoke = medicine.totalMedicineInStoke + med.quantity
+            const updatedInventtory = await inventoryModel.findOneAndUpdate(
+                { _id: med.medicineId },
+                { $set: { totalMedicineInStoke: updatedStoke } },
+                { new: true }
+            )
+            if (!updatedInventtory) {
+                return res.status(400).send({
+                    message: "Getting Error While Updating the Inventory"
+                })
+            }
+        }
+        const updatedBillStatus = await Billing.findOneAndUpdate(
+            { _id: billId },
+            { $set: { isCancelled: true } },
+            { new: true }
+        )
+        if (!updatedBillStatus) {
+            return res.status(400).send({
+                message: "Getting Error While updating the Bill Status"
+            })
+        }
+        return res.status(200).send({
+            message: "Successfully canceled the bill and updated medicine stock"
+        });
+
+    } catch (error) {
+        return res.status(500).send({
+            message: "Internal Server Error "
         })
     }
 }
@@ -1123,26 +1191,19 @@ exports.generateBill = async (req, res) => {
 
         let subTotal = 0;
         bill.medicines.forEach(item => {
-            console.log(item, "item")
             let costPerMedicine = item.medicineId.costPerMedicine;
-            let discount = (costPerMedicine * item.medicineId.discount) / 100
-            let cgst = (costPerMedicine * item.medicineId.CGST) / 100
-            let sgst = (costPerMedicine * item.medicineId.SGST) / 100
+            let discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
+            let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
+            let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
             let gst = cgst + sgst
-            // subTotal += (item.medicineId.costPerMedicine - (item.medicineId.costPerMedicine * item.medicineId.discount) / 100 + item.medicineId.costPerMedicine * (item.medicineId.SGST + item.medicineId.CGST) / 100) * item.quantity;
-            // subTotal+=(item.medicineId.costPerMedicine*item.quantity)+ item.medicineId.SGST + item.medicineId.CGST- item.medicineId.discount
-            subTotal += (costPerMedicine - discount + gst) * item.quantity
-            console.log(costPerMedicine, "costPerMedicine")
-            console.log(discount, "discount")
-            console.log(gst, "gst")
-            console.log(cgst, "cgst")
-            console.log(sgst, "sgst")
-            console.log(subTotal, "subTotal")
-        });
-        const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
-        const logoPath = path.join(__dirname, '../public/logo/vpharmacylogo.png');
+            subTotal += parseFloat(((costPerMedicine - discount + gst) * item.quantity).toFixed(2))
 
-        const html = await ejs.renderFile(templatePath, { bill, logoPath, subTotal });
+        });
+
+        const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
+        // const logoPath = path.join(__dirname, '../public/logo/vpharmacylogo.png');
+        const logoUrl = '/logo/vpharmacylogo.png';
+        const html = await ejs.renderFile(templatePath, { bill, logoUrl, subTotal });
 
         if (!fs.existsSync('./public/nocPdf')) {
             fs.mkdirSync('./public/nocPdf');
@@ -1181,4 +1242,3 @@ exports.generateBill = async (req, res) => {
         res.status(500).send("An error occurred");
     }
 };
-

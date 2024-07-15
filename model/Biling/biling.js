@@ -6,6 +6,7 @@ const bilingmodel = new mongoose.Schema({
     phoneNumber: { type: String },
     prescribedBy: { type: String },
     village: { type: String },
+    isCancelled: { type: Boolean, default: false },
     medicines: [{
         medicineId: { type: objectId, ref: "inventoryModel", required: true },
         quantity: { type: Number, required: true },

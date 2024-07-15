@@ -57,6 +57,8 @@ router.delete("/deleteInventory/:inventoryId", superAdminController.deleteInvent
 
 // Create Biling Route
 router.post("/createBilling", superAdminController.createAndUpdateBiling)
+// Cancel Bill
+router.post("/cancelBill/:billId", superAdminController.cancelBill)
 
 // View Biling
 router.get("/viewBilling/:billingId", superAdminController.ViewBilling)

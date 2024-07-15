@@ -44,7 +44,7 @@
 </head>
 <body>
     <div class="header">
-        <img src="<%= logoPath %>" alt="VPharmacy Logo">
+        <img src="<%= logoUrl %>" alt="VPharmacy Logo">
         <h1>VPharmacy</h1>
     </div>
     <div class="details">
@@ -81,11 +81,19 @@
     <div class="subtotal">
         <p>Subtotal: <%= subTotal %></p>
     </div>
-    <div class="terms">
+    <!-- <div class="terms">
         <p>Terms and Conditions: <%= bill.termsAndCondition %></p>
+    </div> -->
+    <div class="terms">
+        <h3>Terms and Conditions</h3>
+        <ul>
+            <li>Medicines once purchased /ordered can't be returned.</li>
+            <li>Prescription is Mandatory for ordering or purchasing medicines.</li>
+            <!-- <li>We reserve the right to modify prices without prior notice.</li> -->
+        </ul>
     </div>
     <div class="signature">
-        <p>Signature: _____________________</p>
+        <p>Signature: Bishnu Pandey</p>
     </div>
 </body>
 </html>
