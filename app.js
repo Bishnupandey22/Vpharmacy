@@ -9,12 +9,18 @@ const port = process.env.PORT
 connectDb(DATABASE_URL)
 const path = require('path');
 const superAdminRoutes = require("./routes/superAdmin")
-
+const passport = require('passport');
 // Set EJS as the view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-
+app.use(require('express-session')({
+    secret: 'your_secret_key',
+    resave: false,
+    saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(cors())
 app.use(express.json())
 app.use(express.static('public'))
