@@ -34,6 +34,9 @@
             text-align: right;
             margin-top: 20px;
         }
+        .terms {
+            margin-top: 20px;
+        }
         .signature {
             margin-top: 40px;
         }
@@ -65,11 +68,11 @@
         <tbody>
             <% bill.medicines.forEach(item => { %>
             <tr>
-                <td><%= item.medicineId.name %></td>
+                <td><%= item.medicineId.medicineName %></td>
                 <td><%= item.medicineId.mrp %></td>
                 <td><%= item.medicineId.discount %></td>
-                <td><%= item.medicineId.sgst %></td>
-                <td><%= item.medicineId.cgst %></td>
+                <td><%= item.medicineId.SGST %></td>
+                <td><%= item.medicineId.CGST %></td>
                 <td><%= item.quantity %></td>
             </tr>
             <% }); %>
