@@ -58,29 +58,48 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Medicine</th>
+                <!-- <th>Medicine</th>
                 <th>MRP</th>
                 <th>Discount</th>
                 <th>SGST</th>
                 <th>CGST</th>
+                <th>Quantity</th> -->
+                <th>Medicine</th>
                 <th>Quantity</th>
+                <th>Expiry</th>
+                <th>Batch Number</th>
+                <th>MRP / Medicine </th>
+                <th>Amount</th>
+               
             </tr>
         </thead>
         <tbody>
             <% bill.medicines.forEach(item => { %>
             <tr>
-                <td><%= item.medicineId.medicineName %></td>
+                <!-- <td><%= item.medicineId.medicineName %></td>
                 <td><%= item.medicineId.mrp %></td>
                 <td><%= item.medicineId.discount %></td>
                 <td><%= item.medicineId.SGST %></td>
                 <td><%= item.medicineId.CGST %></td>
+                <td><%= item.quantity %></td> -->
+                <td><%= item.medicineId.medicineName %></td>
                 <td><%= item.quantity %></td>
+                <td><%= item.medicineId.expiryDate %></td>
+                <td><%= item.medicineId.BatchNumber %></td>
+                <td><%= item.medicineId.mrpPerMedicine.toFixed(2)%></td>
+                <td><%= amount.toFixed(2) %></td>
+                
             </tr>
             <% }); %>
         </tbody>
     </table>
     <div class="subtotal">
-        <p>Subtotal: <%= subTotal %></p>
+        <% bill.medicines.forEach(item => { %>
+        <p>Total Amount :inr <%= amount.toFixed(2) %></p>
+        <p>Discount (%) : <%= item.medicineId.discount.toFixed(2)%></p>
+        <!-- <p>GST(SGST+CGST) % : <%= GST %></p> -->
+        <p>Subtotal: inr <%= subTotal.toFixed(2)%></p>
+        <% }); %>
     </div>
     <!-- <div class="terms">
         <p>Terms and Conditions: <%= bill.termsAndCondition %></p>

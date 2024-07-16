@@ -11,6 +11,23 @@ const fs = require("fs");
 const ejs = require("ejs");
 const puppeteer = require("puppeteer");
 const pdf = require('html-pdf');
+const Counter = require("../model/counterSchema/CounterSchema");
+
+
+// generate invoice number
+const getNextSequenceValue = async (sequenceName) => {
+    const counter = await Counter.findOneAndUpdate(
+        { name: sequenceName },
+        { $inc: { sequence_value: 1 } },
+        { new: true, upsert: true }
+    );
+    if (!counter.sequence_value) {
+        counter.sequence_value = 100;
+        await counter.save();
+    }
+
+    return counter.sequence_value;
+};
 // create super Admin
 exports.createSuperAdmin = async (req, res) => {
     console.log("hiting")
@@ -120,7 +137,7 @@ exports.signIn = async (req, res) => {
 // Creaet And Update User
 exports.createAndUpdateUser = async (req, res) => {
     try {
-        const { id, firstName, middleName, lastName, gender, dateOfBirth, email, password, phone, city, village, state, country, zipCode, address } = req.body
+        const { id, firstName, middleName, lastName, gender, dateOfBirth, email, password, phone, city, village, state, country, zipCode, address, designation, roleId } = req.body
 
         // updating user
         if (id) {
@@ -193,17 +210,17 @@ exports.createAndUpdateUser = async (req, res) => {
             let profileObject = {
                 firstName: firstName,
                 middleName: middleName,
-                // lastName: lastName,
-                // gender: gender,
-                // dateOfBirth: dateOfBirth,
+                lastName: lastName,
+                gender: gender,
+                dateOfBirth: dateOfBirth,
                 email: email,
-                // phone: phone,
-                // city: city,
-                // state: state,
-                // country: country,
-                // village: village,
-                // zipCode: zipCode,
-                // address: address,
+                phone: phone,
+                city: city,
+                state: state,
+                country: country,
+                village: village,
+                zipCode: zipCode,
+                address: address,
             }
 
             console.log("profileObject", profileObject);
@@ -277,13 +294,16 @@ exports.getAllUsers = async (req, res) => {
 // create and update Inventory
 exports.createAndUpdateInventory = async (req, res) => {
     try {
-        const { id, medicineName, composition, type, totalquantityOfMedicineinAPack, strip, rate, discount, CGST, SGST, BatchNumber, HSNCode, expiryDate, mrp, minimumStock } = req.body
+        const { id, medicineName, composition, type, totalQuantity, strip, rate, discount, CGST, SGST, BatchNumber, HSNCode, expiryDate, mrp, minimumStock } = req.body
 
-        if (!totalquantityOfMedicineinAPack || !mrp || !rate) {
+        if (!totalQuantity || !mrp || !rate) {
             return res.status(400).send({
                 message: "totalquantityOfMedicineinAPack or mrp or rate not provided"
             })
         }
+        let calculatedStripCount = totalQuantity / strip
+        let totalMrp = mrp * strip
+        let mrpPerMedicine = parseFloat(totalMrp / totalQuantity).toFixed(2)
         // net rate Calculation
         let calculatedNetRate = '';
         if (CGST && SGST && discount) {
@@ -296,6 +316,9 @@ exports.createAndUpdateInventory = async (req, res) => {
             calculatedNetRate = parseFloat(rate.toFixed(2));
         }
 
+        // Total Purchased Cost
+        let calculatedTotalPurchasedCost = calculatedNetRate * strip
+
         // profit amount calculation
         let calculatedProfitAmount = ""
         if (calculatedNetRate) {
@@ -305,12 +328,14 @@ exports.createAndUpdateInventory = async (req, res) => {
 
         let calculatedProfitPercent = ""
         if (calculatedNetRate && calculatedProfitAmount) {
-            calculatedProfitPercent = parseFloat(calculatedProfitAmount / calculatedNetRate * 100).toFixed(2)
+            // calculatedProfitPercent = parseFloat(calculatedProfitAmount / calculatedNetRate * 100).toFixed(2)
+            calculatedProfitPercent = parseFloat(((calculatedProfitAmount * 100) / calculatedNetRate).toFixed(2))
         }
         // cost per medicine calculation
-        let calculatedCostPerMedicine = parseFloat(mrp / totalquantityOfMedicineinAPack).toFixed(2)
 
-        let calculatedTotalMedicineInStoke = totalquantityOfMedicineinAPack * strip
+        let calculatedCostPerMedicine = parseFloat(calculatedTotalPurchasedCost / totalQuantity).toFixed(2)
+
+        let calculatedTotalMedicineInStoke = totalQuantity
         if (id) {
             const isExists = await inventoryModel.findOne({ _id: id })
             if (!isExists) {
@@ -328,7 +353,7 @@ exports.createAndUpdateInventory = async (req, res) => {
                         medicineName: medicineName,
                         composition: composition,
                         type: type,
-                        totalquantityOfMedicineinAPack: totalquantityOfMedicineinAPack,
+                        totalQuantity: totalQuantity,
                         strip: strip,
                         rate: rate,
                         discount: discount,
@@ -336,14 +361,18 @@ exports.createAndUpdateInventory = async (req, res) => {
                         SGST: SGST,
                         BatchNumber: BatchNumber,
                         HSNCode: HSNCode,
-                        netRate: calculatedNetRate,
+                        netRate: calculatedNetRate,//purchased cost
                         mrp: mrp,
+                        totalPurchasedCost: calculatedTotalPurchasedCost,
+                        totalMrp: totalMrp,
+                        mrpPerMedicine: mrpPerMedicine,
                         profitPercent: calculatedProfitPercent,
                         profitAmount: calculatedProfitAmount,
                         costPerMedicine: calculatedCostPerMedicine,
                         expiryDate: expiryDate,
                         minimumStock: minimumStock,
-                        totalMedicineInStoke: calculatedTotalMedicineInStoke
+                        totalMedicineInStoke: calculatedTotalMedicineInStoke,
+                        medicinePerStrip: calculatedStripCount
                     }
                 }
             )
@@ -364,7 +393,7 @@ exports.createAndUpdateInventory = async (req, res) => {
                 medicineName: medicineName,
                 composition: composition,
                 type: type,
-                totalquantityOfMedicineinAPack: totalquantityOfMedicineinAPack,
+                totalQuantity: totalQuantity,
                 strip: strip,
                 rate: rate,
                 discount: discount,
@@ -372,15 +401,19 @@ exports.createAndUpdateInventory = async (req, res) => {
                 SGST: SGST,
                 BatchNumber: BatchNumber,
                 HSNCode: HSNCode,
-                netRate: calculatedNetRate,
+                netRate: calculatedNetRate,//purchased cost
                 mrp: mrp,
+                totalPurchasedCost: calculatedTotalPurchasedCost,
+                totalMrp: totalMrp,
+                mrpPerMedicine: mrpPerMedicine,
                 profitPercent: calculatedProfitPercent,
                 profitAmount: calculatedProfitAmount,
                 costPerMedicine: calculatedCostPerMedicine,
-                // customerDiscount: customerDiscount,
                 expiryDate: expiryDate,
                 minimumStock: minimumStock,
                 totalMedicineInStoke: calculatedTotalMedicineInStoke,
+                medicinePerStrip: calculatedStripCount
+
             })
             if (!createData) {
                 return res.status(403).send({
@@ -394,6 +427,7 @@ exports.createAndUpdateInventory = async (req, res) => {
         }
 
     } catch (error) {
+        console.log(error, "error")
         return res.status(500).send({
             message: "Internal Server Error"
         })
@@ -577,13 +611,15 @@ exports.createAndUpdateBiling = async (req, res) => {
         } else {
 
 
-            const generateInvoiceId = `inv${Date.now()}`
+            // const generateInvoiceId = `Vp/24/100${Date.now()}`
+            const year = new Date().getFullYear().toString().slice(-2);
+            const invoiceNumber = `VP/${year}/${await getNextSequenceValue('invoice')}`;
             const createBilling = await Billing.create({
                 patientId: patientId,
                 medicines: medicines,
                 address: address,
                 termsAndCondition: termsAndCondition,
-                invoiceNumber: generateInvoiceId,
+                invoiceNumber: invoiceNumber,
                 phoneNumber: phoneNumber,
                 prescribedBy: prescribedBy,
                 village: village
@@ -1182,29 +1218,38 @@ exports.generateBill = async (req, res) => {
         const { invoiceNumber } = req.params;
         const bill = await Billing.findOne({ invoiceNumber }).populate({
             path: 'medicines.medicineId',
-            select: 'medicineName mrp discount SGST CGST costPerMedicine'
+            select: 'medicineName mrp discount SGST CGST costPerMedicine mrpPerMedicine expiryDate BatchNumber'
         });
 
         if (!bill) {
             return res.status(404).send("Bill not found");
         }
 
-
+        let amount = 0;
+        let GST = 0
         let subTotal = 0;
         bill.medicines.forEach(item => {
-            let costPerMedicine = item.medicineId.costPerMedicine;
+            let costPerMedicine = item.medicineId.mrpPerMedicine;
+            let cgstPercent = Number(item.medicineId.CGST);
+            let sgstPercent = Number(item.medicineId.SGST);
+            // let discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
+            // let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
+            // let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
             let discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
             let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
             let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
             let gst = cgst + sgst
-            subTotal += parseFloat(((costPerMedicine - discount + gst) * item.quantity).toFixed(2))
-
+            // subTotal += parseFloat(((costPerMedicine - discount + gst) * item.quantity).toFixed(2))
+            // amount = costPerMedicine * item.quantity
+            subTotal += parseFloat(((costPerMedicine - discount) * item.quantity).toFixed(2));
+            amount = parseFloat((costPerMedicine * item.quantity).toFixed(2));
+            GST = cgstPercent + sgstPercent
         });
 
         const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
         // const logoPath = path.join(__dirname, '../public/logo/vpharmacylogo.png');
         const logoUrl = '/logo/vpharmacylogo.png';
-        const html = await ejs.renderFile(templatePath, { bill, logoUrl, subTotal });
+        const html = await ejs.renderFile(templatePath, { bill, logoUrl, subTotal, amount, GST });
 
         if (!fs.existsSync('./public/nocPdf')) {
             fs.mkdirSync('./public/nocPdf');
@@ -1243,3 +1288,12 @@ exports.generateBill = async (req, res) => {
         res.status(500).send("An error occurred");
     }
 };
+
+// create Delevery Boy
+// exports.createDelivery = async (req, res) => {
+//     try {
+//         const { firstName, middleName, lastName, gender, dateOfBirth } = req.body
+//     } catch (error) {
+
+//     }
+// }

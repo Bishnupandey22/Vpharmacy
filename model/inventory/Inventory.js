@@ -4,8 +4,10 @@ const inventoryModel = new mongoose.Schema({
     medicineName: { type: String, default: null },
     composition: { type: String, default: null },
     type: { type: String, },//tab,caps,syr,inj
-    totalquantityOfMedicineinAPack: { type: Number },
+    totalQuantity: { type: Number },
+
     totalMedicineInStoke: { type: Number },
+    totalPurchasedCost: { type: Number },
     strip: { type: Number },
     rate: { type: Number },
     discount: { type: Number },
@@ -13,7 +15,11 @@ const inventoryModel = new mongoose.Schema({
     SGST: { type: String },
     BatchNumber: { type: String },
     HSNCode: { type: String },
-    netRate: { type: String },
+    netRate: { type: Number },//purchased cost
+    totalPurchasedCost: { type: Number },
+    medicinePerStrip: { type: Number },
+    totalMrp: { type: Number },
+    mrpPerMedicine: { type: Number },
     profitPercent: { type: Number },
     profitAmount: { type: Number },
     costPerMedicine: { type: Number },
