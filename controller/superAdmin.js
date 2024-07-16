@@ -434,6 +434,7 @@ exports.getListOfInventoryWithPagination = async (req, res) => {
                 { HSNCode: { $regex: searchText, $options: "i" } },
             ]
         }
+        console.log(whereCondition, "searchText")
 
         if (!searchText) {
             delete whereCondition.$or
