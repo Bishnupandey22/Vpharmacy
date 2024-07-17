@@ -11,8 +11,8 @@ const inventoryModel = new mongoose.Schema({
     strip: { type: Number },
     rate: { type: Number },
     discount: { type: Number },
-    CGST: { type: String },
-    SGST: { type: String },
+    CGST: { type: Number },
+    SGST: { type: Number },
     BatchNumber: { type: String },
     HSNCode: { type: String },
     netRate: { type: Number },//purchased cost
@@ -25,8 +25,8 @@ const inventoryModel = new mongoose.Schema({
     costPerMedicine: { type: Number },
     customerDiscount: { type: Number },
     expiryDate: { type: String },
-    mrp: { type: String },
-    minimumStock: { type: String },
+    mrp: { type: Number },
+    minimumStock: { type: Number },
     createdAt: { type: Date, default: new Date() },
     deletedAt: { type: Date, default: null },
 

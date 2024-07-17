@@ -46,9 +46,10 @@
     <div class="header">
         <!-- <img src="https://ibb.co/Vw0nxbb" alt="VPharmacy Logo"> -->
         <a href="https://imgbb.com/"><img src="https://i.ibb.co/kmVbJzz/vpharmacylogo.png" alt="vpharmacylogo"></a>
-        <h1>VPharmacy</h1>
+        <h1>V Pharmacy Bill</h1>
     </div>
     <div class="details">
+        <p>Invoice: <%= bill.invoiceNumber %></p>
         <p>Patient Name: <%= bill.patientId %></p>
         <p>Phone Number: <%= bill.phoneNumber %></p>
         <p>Prescribed By: <%= bill.prescribedBy %></p>
@@ -95,10 +96,10 @@
     </table>
     <div class="subtotal">
         <% bill.medicines.forEach(item => { %>
-        <p>Total Amount :inr <%= amount.toFixed(2) %></p>
-        <p>Discount (%) : <%= item.medicineId.discount.toFixed(2)%></p>
+        <p>Total Amount: INR <%= amount.toFixed(2) %></p>
+        <p>Discount (%): <%= item.medicineId.discount.toFixed(2)%></p>
         <!-- <p>GST(SGST+CGST) % : <%= GST %></p> -->
-        <p>Subtotal: inr <%= subTotal.toFixed(2)%></p>
+        <p>Subtotal: INR <%= subTotal.toFixed(2)%></p>
         <% }); %>
     </div>
     <!-- <div class="terms">

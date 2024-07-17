@@ -79,7 +79,7 @@ router.get("/sortBilling", superAdminController.sortBilling)
 router.get("/getListOfBillingWithPagination")
 
 // generate bill
-router.get("/generateBill/:invoiceNumber", superAdminController.generateBill)
+router.get("/generateBill", superAdminController.generateBill)
 
 
 

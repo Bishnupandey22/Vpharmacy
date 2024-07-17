@@ -296,6 +296,7 @@ exports.createAndUpdateInventory = async (req, res) => {
     try {
         const { id, medicineName, composition, type, totalQuantity, strip, rate, discount, CGST, SGST, BatchNumber, HSNCode, expiryDate, mrp, minimumStock } = req.body
 
+
         if (!totalQuantity || !mrp || !rate) {
             return res.status(400).send({
                 message: "totalquantityOfMedicineinAPack or mrp or rate not provided"
@@ -315,6 +316,7 @@ exports.createAndUpdateInventory = async (req, res) => {
         } else {
             calculatedNetRate = parseFloat(rate.toFixed(2));
         }
+        console.log(calculatedNetRate, "calculatedNetRate")
 
         // Total Purchased Cost
         let calculatedTotalPurchasedCost = calculatedNetRate * strip
@@ -468,7 +470,6 @@ exports.getListOfInventoryWithPagination = async (req, res) => {
                 { HSNCode: { $regex: searchText, $options: "i" } },
             ]
         }
-        console.log(whereCondition, "searchText")
 
         if (!searchText) {
             delete whereCondition.$or
@@ -538,7 +539,7 @@ exports.deleteInventory = async (req, res) => {
 
 exports.createAndUpdateBiling = async (req, res) => {
     try {
-        const { patientId, medicines, address, termsAndCondition, id, phoneNumber, prescribedBy, village } = req.body
+        const { patientId, medicines, address, id, phoneNumber, prescribedBy, village } = req.body
 
         // check if patient exists
         // const isPatientExists = await userModel.findById(patientId)
@@ -591,7 +592,6 @@ exports.createAndUpdateBiling = async (req, res) => {
                     {
                         medicines: medicines,
                         address: address,
-                        termsAndCondition: termsAndCondition,
                         phoneNumber: phoneNumber,
                         prescribedBy: prescribedBy,
                         village: village
@@ -618,7 +618,6 @@ exports.createAndUpdateBiling = async (req, res) => {
                 patientId: patientId,
                 medicines: medicines,
                 address: address,
-                termsAndCondition: termsAndCondition,
                 invoiceNumber: invoiceNumber,
                 phoneNumber: phoneNumber,
                 prescribedBy: prescribedBy,
@@ -1215,7 +1214,7 @@ exports.sortBilling = async (req, res) => {
 // };
 exports.generateBill = async (req, res) => {
     try {
-        const { invoiceNumber } = req.params;
+        const { invoiceNumber } = req.body;
         const bill = await Billing.findOne({ invoiceNumber }).populate({
             path: 'medicines.medicineId',
             select: 'medicineName mrp discount SGST CGST costPerMedicine mrpPerMedicine expiryDate BatchNumber'
@@ -1224,6 +1223,7 @@ exports.generateBill = async (req, res) => {
         if (!bill) {
             return res.status(404).send("Bill not found");
         }
+        console.log(bill, "bill")
 
         let amount = 0;
         let GST = 0
