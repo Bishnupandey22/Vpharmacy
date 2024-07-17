@@ -15,16 +15,27 @@ const Counter = require("../model/counterSchema/CounterSchema");
 
 
 // generate invoice number
+
+
 const getNextSequenceValue = async (sequenceName) => {
     const counter = await Counter.findOneAndUpdate(
         { name: sequenceName },
         { $inc: { sequence_value: 1 } },
         { new: true, upsert: true }
     );
-    if (!counter.sequence_value) {
-        counter.sequence_value = 100;
-        await counter.save();
+    // if (!counter.sequence_value) {
+    //     counter.sequence_value = 100;
+    //     await counter.save();
+    // }
+    console.log(counter, "counter")
+    if (!counter || !counter.sequence_value) {
+        // Create a new counter with default value if not found
+        const newCounter = new Counter({ name: sequenceName });
+        await newCounter.save();
+        return newCounter.sequence_value; // Return the default value (100)
     }
+
+    return counter.sequence_value;
 
     return counter.sequence_value;
 };
@@ -302,20 +313,22 @@ exports.createAndUpdateInventory = async (req, res) => {
                 message: "totalquantityOfMedicineinAPack or mrp or rate not provided"
             })
         }
+        console.log(strip, rate, totalQuantity)
         let calculatedStripCount = totalQuantity / strip
         let totalMrp = mrp * strip
         let mrpPerMedicine = parseFloat(totalMrp / totalQuantity).toFixed(2)
         // net rate Calculation
-        let calculatedNetRate = '';
-        if (CGST && SGST && discount) {
-            calculatedNetRate = parseFloat((rate + (rate * CGST) / 100 + (rate * SGST) / 100 - (rate * discount) / 100).toFixed(2));
-        } else if (!discount) {
-            calculatedNetRate = parseFloat((rate + (rate * CGST) / 100 + (rate * SGST) / 100).toFixed(2));
-        } else if (!CGST && !SGST) {
-            calculatedNetRate = parseFloat((rate - (rate * discount) / 100).toFixed(2));
-        } else {
-            calculatedNetRate = parseFloat(rate.toFixed(2));
-        }
+        // let calculatedNetRate = '';
+        let calculatedNetRate = parseFloat(rate.toFixed(2));
+        // if (CGST && SGST && discount) {
+        //     calculatedNetRate = parseFloat((rate + (rate * CGST) / 100 + (rate * SGST) / 100 - (rate * discount) / 100).toFixed(2));
+        // } else if (!discount) {
+        //     calculatedNetRate = parseFloat((rate + (rate * CGST) / 100 + (rate * SGST) / 100).toFixed(2));
+        // } else if (!CGST && !SGST) {
+        //     calculatedNetRate = parseFloat((rate - (rate * discount) / 100).toFixed(2));
+        // } else {
+        //     calculatedNetRate = parseFloat(rate.toFixed(2));
+        // }
         console.log(calculatedNetRate, "calculatedNetRate")
 
         // Total Purchased Cost
@@ -1212,10 +1225,86 @@ exports.sortBilling = async (req, res) => {
 //         res.status(500).send("An error occurred");
 //     }
 // };
+// exports.generateBill = async (req, res) => {
+//     try {
+//         const { invoiceNumber } = req.body;
+//         const bill = await Billing.findOne({ invoiceNumber: invoiceNumber }).populate({
+//             path: 'medicines.medicineId',
+//             select: 'medicineName mrp discount SGST CGST costPerMedicine mrpPerMedicine expiryDate BatchNumber'
+//         });
+
+//         if (!bill) {
+//             return res.status(404).send("Bill not found");
+//         }
+//         console.log(bill, "bill")
+
+//         let amount = 0;
+//         let GST = 0
+//         let subTotal = 0;
+//         let discount = 0
+//         let newAmount = []
+//         let totalAmount = 0
+//         bill.medicines.forEach(item => {
+//             let costPerMedicine = item.medicineId.mrpPerMedicine;
+//             let cgstPercent = Number(item.medicineId.CGST);
+//             let sgstPercent = Number(item.medicineId.SGST);
+//             discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
+//             let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
+//             let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
+//             let gst = cgst + sgst
+//             subTotal += parseFloat(((costPerMedicine - discount) * item.quantity).toFixed(2));
+//             amount = parseFloat((costPerMedicine * item.quantity).toFixed(2));
+//             totalAmount = totalAmount + amount
+//             newAmount.push(amount)
+//             GST = cgstPercent + sgstPercent
+//         });
+//         console.log(newAmount, "dummy Amount")
+//         const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
+//         // const logoPath = path.join(__dirname, '../public/logo/vpharmacylogo.png');
+//         const logoUrl = '/logo/vpharmacylogo.png';
+//         const html = await ejs.renderFile(templatePath, { bill, logoUrl, subTotal, newAmount, GST, discount, totalAmount });
+
+//         if (!fs.existsSync('./public/nocPdf')) {
+//             fs.mkdirSync('./public/nocPdf');
+//         }
+
+//         const pdfFolderPath = './public/nocPdf';
+//         const pdfFileName = `${invoiceNumber}_Noc.pdf`;
+//         const pdfFilePath = path.join(pdfFolderPath, pdfFileName);
+
+//         if (fs.existsSync(pdfFilePath)) {
+//             fs.unlinkSync(pdfFilePath);
+//         }
+
+//         const options = { format: 'A4', border: '10mm' };
+
+//         pdf.create(html, options).toFile(pdfFilePath, (err, pdfResult) => {
+//             if (err) {
+//                 console.error(err);
+//                 return res.status(500).send("An error occurred while generating the PDF");
+//             }
+
+//             const pdfStream = fs.createReadStream(pdfFilePath);
+//             res.set({
+//                 'Content-Type': 'application/pdf',
+//                 'Content-Disposition': `attachment; filename=bill_${invoiceNumber}.pdf`,
+//             });
+//             pdfStream.pipe(res);
+
+//             pdfStream.on('end', () => {
+//                 fs.unlinkSync(pdfFilePath); // Delete the PDF file after sending the response
+//             });
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).send("An error occurred");
+//     }
+// };
 exports.generateBill = async (req, res) => {
     try {
         const { invoiceNumber } = req.body;
-        const bill = await Billing.findOne({ invoiceNumber }).populate({
+        const bill = await Billing.findOne({ invoiceNumber: invoiceNumber }).populate({
             path: 'medicines.medicineId',
             select: 'medicineName mrp discount SGST CGST costPerMedicine mrpPerMedicine expiryDate BatchNumber'
         });
@@ -1223,33 +1312,34 @@ exports.generateBill = async (req, res) => {
         if (!bill) {
             return res.status(404).send("Bill not found");
         }
-        console.log(bill, "bill")
 
-        let amount = 0;
+        let newAmount = [];
+        let totalAmount = 0
+        let discount = 0
+        let subTotal = 0
         let GST = 0
-        let subTotal = 0;
         bill.medicines.forEach(item => {
             let costPerMedicine = item.medicineId.mrpPerMedicine;
-            let cgstPercent = Number(item.medicineId.CGST);
-            let sgstPercent = Number(item.medicineId.SGST);
-            // let discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
-            // let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
-            // let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
-            let discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
+            discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
             let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
             let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
-            let gst = cgst + sgst
-            // subTotal += parseFloat(((costPerMedicine - discount + gst) * item.quantity).toFixed(2))
-            // amount = costPerMedicine * item.quantity
+            GST = cgst + sgst;
+            let amount = parseFloat((costPerMedicine * item.quantity).toFixed(2));
             subTotal += parseFloat(((costPerMedicine - discount) * item.quantity).toFixed(2));
-            amount = parseFloat((costPerMedicine * item.quantity).toFixed(2));
-            GST = cgstPercent + sgstPercent
+            totalAmount += amount
+            newAmount.push({
+                medicineName: item.medicineId.medicineName,
+                quantity: item.quantity,
+                expiryDate: item.medicineId.expiryDate,
+                BatchNumber: item.medicineId.BatchNumber,
+                mrpPerMedicine: costPerMedicine.toFixed(2),
+                amount: amount.toFixed(2)
+            });
         });
 
         const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
-        // const logoPath = path.join(__dirname, '../public/logo/vpharmacylogo.png');
         const logoUrl = '/logo/vpharmacylogo.png';
-        const html = await ejs.renderFile(templatePath, { bill, logoUrl, subTotal, amount, GST });
+        const html = await ejs.renderFile(templatePath, { bill, logoUrl, newAmount, totalAmount, discount, subTotal, GST });
 
         if (!fs.existsSync('./public/nocPdf')) {
             fs.mkdirSync('./public/nocPdf');
@@ -1288,6 +1378,7 @@ exports.generateBill = async (req, res) => {
         res.status(500).send("An error occurred");
     }
 };
+
 
 // create Delevery Boy
 // exports.createDelivery = async (req, res) => {

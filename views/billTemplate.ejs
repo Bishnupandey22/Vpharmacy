@@ -49,7 +49,7 @@
         <h1>V Pharmacy Bill</h1>
     </div>
     <div class="details">
-        <p>Invoice: <%= bill.invoiceNumber %></p>
+        <p>INVOICE: <%= bill.invoiceNumber %></p>
         <p>Patient Name: <%= bill.patientId %></p>
         <p>Phone Number: <%= bill.phoneNumber %></p>
         <p>Prescribed By: <%= bill.prescribedBy %></p>
@@ -74,33 +74,29 @@
                
             </tr>
         </thead>
+        
         <tbody>
-            <% bill.medicines.forEach(item => { %>
+            <% newAmount.forEach(item => { %>
             <tr>
-                <!-- <td><%= item.medicineId.medicineName %></td>
-                <td><%= item.medicineId.mrp %></td>
-                <td><%= item.medicineId.discount %></td>
-                <td><%= item.medicineId.SGST %></td>
-                <td><%= item.medicineId.CGST %></td>
-                <td><%= item.quantity %></td> -->
-                <td><%= item.medicineId.medicineName %></td>
+                <td><%= item.medicineName %></td>
                 <td><%= item.quantity %></td>
-                <td><%= item.medicineId.expiryDate %></td>
-                <td><%= item.medicineId.BatchNumber %></td>
-                <td><%= item.medicineId.mrpPerMedicine.toFixed(2)%></td>
-                <td><%= amount.toFixed(2) %></td>
-                
+                <td><%= new Date(item.expiryDate).toLocaleDateString() %></td>
+                <td><%= item.BatchNumber %></td>
+                <td><%= item.mrpPerMedicine %></td>
+                <td><%= item.amount %></td>
             </tr>
             <% }); %>
         </tbody>
+        
     </table>
     <div class="subtotal">
-        <% bill.medicines.forEach(item => { %>
-        <p>Total Amount: INR <%= amount.toFixed(2) %></p>
-        <p>Discount (%): <%= item.medicineId.discount.toFixed(2)%></p>
+        <!-- <% bill.medicines.forEach(item => { %>
+        
+        <% }); %> -->
+        <p>Total Amount: INR <%= totalAmount.toFixed(2) %></p>
+        <p>Discount (%): <%= discount.toFixed(2)%></p>
         <!-- <p>GST(SGST+CGST) % : <%= GST %></p> -->
         <p>Subtotal: INR <%= subTotal.toFixed(2)%></p>
-        <% }); %>
     </div>
     <!-- <div class="terms">
         <p>Terms and Conditions: <%= bill.termsAndCondition %></p>
