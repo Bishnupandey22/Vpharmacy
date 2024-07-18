@@ -11,8 +11,8 @@ const fs = require("fs");
 const ejs = require("ejs");
 const puppeteer = require("puppeteer");
 const Counter = require("../model/counterSchema/CounterSchema");
-
-
+const PDFDocument = require('pdfkit');
+const htmlPdf = require('html-pdf');
 // generate invoice number
 
 
@@ -1385,10 +1385,223 @@ exports.sortBilling = async (req, res) => {
 
 // this is using pupeeteer
 
+// exports.generateBill = async (req, res) => {
+//     try {
+//         const { invoiceNumber } = req.body;
+//         const bill = await Billing.findOne({ invoiceNumber: invoiceNumber }).populate({
+//             path: 'medicines.medicineId',
+//             select: 'medicineName mrp discount SGST CGST costPerMedicine mrpPerMedicine expiryDate BatchNumber'
+//         });
+
+//         if (!bill) {
+//             return res.status(404).send("Bill not found");
+//         }
+
+//         let newAmount = [];
+//         let totalAmount = 0;
+//         let discount = 0;
+//         let subTotal = 0;
+//         let GST = 0;
+
+//         bill.medicines.forEach(item => {
+//             let costPerMedicine = item.medicineId.mrpPerMedicine;
+//             discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
+//             let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
+//             let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
+//             GST = cgst + sgst;
+//             let amount = parseFloat((costPerMedicine * item.quantity).toFixed(2));
+//             subTotal += parseFloat(((costPerMedicine - discount) * item.quantity).toFixed(2));
+//             totalAmount += amount;
+//             newAmount.push({
+//                 medicineName: item.medicineId.medicineName,
+//                 quantity: item.quantity,
+//                 expiryDate: item.medicineId.expiryDate,
+//                 BatchNumber: item.medicineId.BatchNumber,
+//                 mrpPerMedicine: costPerMedicine.toFixed(2),
+//                 amount: amount.toFixed(2)
+//             });
+//         });
+
+//         const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
+//         const logoUrl = '/logo/vpharmacylogo.png';
+//         const html = await ejs.renderFile(templatePath, { bill, logoUrl, newAmount, totalAmount, discount, subTotal, GST });
+
+//         if (!fs.existsSync('./public/nocPdf')) {
+//             fs.mkdirSync('./public/nocPdf');
+//         }
+
+//         const pdfFolderPath = './public/nocPdf';
+//         const pdfFileName = `${invoiceNumber}_Noc.pdf`;
+//         const pdfFilePath = path.join(pdfFolderPath, pdfFileName);
+
+//         if (fs.existsSync(pdfFilePath)) {
+//             fs.unlinkSync(pdfFilePath);
+//         }
+
+//         const browser = await puppeteer.launch({
+//             headless: true,
+//             args: ['--no-sandbox', '--disable-setuid-sandbox'],
+
+//             // executablePath: process.env.NODE_ENV === "production" ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
+//             timeout: 0,
+//         });
+//         // '/usr/bin/chromium-browser'
+//         const page = await browser.newPage();
+//         console.log("recieveed1")
+
+//         // const pdf = await page.pdf({ format: 'A4', margin: { top: '10mm' } });
+//         await page.setContent(html, { waitUntil: 'domcontentloaded' });
+//         await page.emulateMediaType('screen')
+
+//         // await page.pdf({ format: "A4" })
+//         console.log("recieveed2")
+//         const pfd = await page.pdf({
+//             path: pdfFilePath,
+//             format: 'A4',
+//             margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+//             printBackground: true
+//         });
+//         console.log("recieveed3")
+
+//         await browser.close();
+
+//         const pdfStream = fs.createReadStream(pdfFilePath);
+//         res.set({
+//             'Content-Type': 'application/pdf',
+//             'Content-Disposition': `attachment; filename=bill_${invoiceNumber}.pdf`,
+//         });
+//         pdfStream.pipe(res);
+
+//         pdfStream.on('end', () => {
+//             fs.unlinkSync(pdfFilePath); // Delete the PDF file after sending the response
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).send("An error occurred");
+//     }
+// };
+
+// This is using pdf-kit
+
+// exports.generateBill = async (req, res) => {
+//     try {
+//         const { invoiceNumber } = req.body;
+//         const bill = await Billing.findOne({ invoiceNumber }).populate({
+//             path: 'medicines.medicineId',
+//             select: 'medicineName mrp discount SGST CGST costPerMedicine mrpPerMedicine expiryDate BatchNumber'
+//         });
+
+//         if (!bill) {
+//             return res.status(404).send("Bill not found");
+//         }
+
+//         let newAmount = [];
+//         let totalAmount = 0;
+//         let discount = 0;
+//         let subTotal = 0;
+//         let GST = 0;
+
+//         bill.medicines.forEach(item => {
+//             let costPerMedicine = item.medicineId.mrpPerMedicine;
+//             discount = parseFloat(((costPerMedicine * item.medicineId.discount) / 100).toFixed(2));
+//             let cgst = parseFloat(((costPerMedicine * item.medicineId.CGST) / 100).toFixed(2));
+//             let sgst = parseFloat(((costPerMedicine * item.medicineId.SGST) / 100).toFixed(2));
+//             GST = cgst + sgst;
+//             let amount = parseFloat((costPerMedicine * item.quantity).toFixed(2));
+//             subTotal += parseFloat(((costPerMedicine - discount) * item.quantity).toFixed(2));
+//             totalAmount += amount;
+//             newAmount.push({
+//                 medicineName: item.medicineId.medicineName,
+//                 quantity: item.quantity,
+//                 expiryDate: item.medicineId.expiryDate,
+//                 BatchNumber: item.medicineId.BatchNumber,
+//                 mrpPerMedicine: costPerMedicine.toFixed(2),
+//                 amount: amount.toFixed(2)
+//             });
+//         });
+
+//         const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
+//         const logoUrl = path.join(__dirname, '../public/logo/vpharmacylogo.png');
+//         const html = await ejs.renderFile(templatePath, { bill, logoUrl, newAmount, totalAmount, discount, subTotal, GST });
+
+//         if (!fs.existsSync('./public/nocPdf')) {
+//             fs.mkdirSync('./public/nocPdf');
+//         }
+
+//         const pdfFolderPath = './public/nocPdf';
+//         const pdfFileName = `${invoiceNumber}_Noc.pdf`;
+//         const pdfFilePath = path.join(pdfFolderPath, pdfFileName);
+
+//         if (fs.existsSync(pdfFilePath)) {
+//             fs.unlinkSync(pdfFilePath);
+//         }
+
+//         // Create a document
+//         const doc = new PDFDocument({ margin: 10 });
+//         const writeStream = fs.createWriteStream(pdfFilePath);
+//         doc.pipe(writeStream);
+
+//         // Render the HTML content into the PDF
+//         doc.text(html);
+
+//         // Finalize the PDF and end the stream
+//         doc.end();
+//         // Add logo
+//         // doc.image(logoUrl, { width: 150, align: 'center' });
+
+//         // // Add dynamic content
+//         // doc.fontSize(20).text(`Invoice: ${invoiceNumber}`, { align: 'center' });
+//         // doc.fontSize(14).text(`Date: ${new Date().toLocaleDateString()}`, { align: 'right' });
+//         // doc.moveDown();
+
+//         // doc.fontSize(16).text(`Patient Name: ${bill.patientName}`);
+//         // doc.fontSize(14).text(`Patient ID: ${bill.patientId}`);
+//         // doc.moveDown();
+
+//         // Add table
+//         // doc.fontSize(12).text(`Medicines:`, { underline: true });
+//         // doc.moveDown();
+
+//         // newAmount.forEach(item => {
+//         //     doc.text(`Name: ${item.medicineName}`, { continued: true });
+//         //     doc.text(`Quantity: ${item.quantity}`, { continued: true });
+//         //     doc.text(`MRP: ${item.mrpPerMedicine}`, { continued: true });
+//         //     doc.text(`Amount: ${item.amount}`);
+//         // });
+//         // doc.moveDown();
+
+//         // // Add total amount, discount, and GST
+//         // doc.text(`Subtotal: ${subTotal.toFixed(2)}`);
+//         // doc.text(`Discount: ${discount.toFixed(2)}`);
+//         // doc.text(`GST: ${GST.toFixed(2)}`);
+//         // doc.text(`Total Amount: ${totalAmount.toFixed(2)}`);
+//         // doc.end();
+
+//         writeStream.on('finish', () => {
+//             const pdfStream = fs.createReadStream(pdfFilePath);
+//             res.set({
+//                 'Content-Type': 'application/pdf',
+//                 'Content-Disposition': `attachment; filename=bill_${invoiceNumber}.pdf`,
+//             });
+//             pdfStream.pipe(res);
+
+//             pdfStream.on('end', () => {
+//                 fs.unlinkSync(pdfFilePath); // Delete the PDF file after sending the response
+//             });
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).send("An error occurred");
+//     }
+// };
+
+
 exports.generateBill = async (req, res) => {
     try {
         const { invoiceNumber } = req.body;
-        const bill = await Billing.findOne({ invoiceNumber: invoiceNumber }).populate({
+        const bill = await Billing.findOne({ invoiceNumber }).populate({
             path: 'medicines.medicineId',
             select: 'medicineName mrp discount SGST CGST costPerMedicine mrpPerMedicine expiryDate BatchNumber'
         });
@@ -1422,10 +1635,6 @@ exports.generateBill = async (req, res) => {
             });
         });
 
-        const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
-        const logoUrl = '/logo/vpharmacylogo.png';
-        const html = await ejs.renderFile(templatePath, { bill, logoUrl, newAmount, totalAmount, discount, subTotal, GST });
-
         if (!fs.existsSync('./public/nocPdf')) {
             fs.mkdirSync('./public/nocPdf');
         }
@@ -1438,42 +1647,28 @@ exports.generateBill = async (req, res) => {
             fs.unlinkSync(pdfFilePath);
         }
 
-        const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        const templatePath = path.join(__dirname, '../views/billTemplate.ejs');
+        const logoUrl = '/logo/vpharmacylogo.png';
+        const html = await ejs.renderFile(templatePath, { bill, logoUrl, newAmount, totalAmount, discount, subTotal, GST });
 
-            // executablePath: process.env.NODE_ENV === "production" ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
-            timeout: 0,
-        });
-        // '/usr/bin/chromium-browser'
-        const page = await browser.newPage();
-        console.log("recieveed1")
+        const options = { format: 'A4', orientation: 'portrait', border: '10mm' };
 
-        // const pdf = await page.pdf({ format: 'A4', margin: { top: '10mm' } });
-        await page.setContent(html, { waitUntil: 'domcontentloaded' });
-        await page.emulateMediaType('screen')
+        htmlPdf.create(html, options).toFile(pdfFilePath, (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send("An error occurred while generating the PDF");
+            }
 
-        // await page.pdf({ format: "A4" })
-        console.log("recieveed2")
-        const pfd = await page.pdf({
-            path: pdfFilePath,
-            format: 'A4',
-            margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
-            printBackground: true
-        });
-        console.log("recieveed3")
+            const pdfStream = fs.createReadStream(pdfFilePath);
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename=bill_${invoiceNumber}.pdf`,
+            });
+            pdfStream.pipe(res);
 
-        await browser.close();
-
-        const pdfStream = fs.createReadStream(pdfFilePath);
-        res.set({
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename=bill_${invoiceNumber}.pdf`,
-        });
-        pdfStream.pipe(res);
-
-        pdfStream.on('end', () => {
-            fs.unlinkSync(pdfFilePath); // Delete the PDF file after sending the response
+            pdfStream.on('end', () => {
+                fs.unlinkSync(pdfFilePath); // Delete the PDF file after sending the response
+            });
         });
 
     } catch (error) {
@@ -1481,6 +1676,10 @@ exports.generateBill = async (req, res) => {
         res.status(500).send("An error occurred");
     }
 };
+
+
+
+
 
 
 
