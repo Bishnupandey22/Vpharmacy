@@ -1440,8 +1440,9 @@ exports.generateBill = async (req, res) => {
 
         const browser = await puppeteer.launch({
             headless: true,
+            executablePath: '/usr/bin/chromium-browser',
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            timeout: 0,
+            // timeout: 0,
         });
         const page = await browser.newPage();
         console.log("recieveed1")
