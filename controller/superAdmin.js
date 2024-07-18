@@ -1442,7 +1442,7 @@ exports.generateBill = async (req, res) => {
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
 
-            executablePath: process.env.NODE_ENV === "production" ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
+            // executablePath: process.env.NODE_ENV === "production" ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
             timeout: 0,
         });
         // '/usr/bin/chromium-browser'
