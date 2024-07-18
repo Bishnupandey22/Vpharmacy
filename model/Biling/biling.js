@@ -15,6 +15,7 @@ const bilingmodel = new mongoose.Schema({
         // days: { type: String, required: true }
     }],
     invoiceNumber: { type: String, required: true, unique: true },
+    remark: { type: String, default: null },
     address: { type: String, required: true },
     termsAndCondition: { type: String, default: null },
     createdAt: { type: Date, default: Date.now },
