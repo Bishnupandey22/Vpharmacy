@@ -1438,20 +1438,30 @@ exports.generateBill = async (req, res) => {
             fs.unlinkSync(pdfFilePath);
         }
         // {
+
+        // const browser = await puppeteer.launch({
         //     headless: true,
         //     args: ['--no-sandbox', '--disable-setuid-sandbox'],
 
         //     // executablePath: process.env.NODE_ENV === "production" ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
-        //     timeout: 0,
-        // }
-        const browser = await puppeteer.launch();
-        // '/usr/bin/chromium-browser'
+        //     
+        // });
+        const browser = await puppeteer.launch(
+            {
+                headless: "new",
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                timeout: 0,
+            },
+        );
         const page = await browser.newPage();
+        // '/usr/bin/chromium-browser'
         console.log("recieveed1")
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.emulateMediaType('screen');
 
         // const pdf = await page.pdf({ format: 'A4', margin: { top: '10mm' } });
-        await page.setContent(html, { waitUntil: 'domcontentloaded' });
-        await page.emulateMediaType('screen')
+        // await page.setContent(html, { waitUntil: 'domcontentloaded' });
+        // await page.emulateMediaType('screen')
 
         // await page.pdf({ format: "A4" })
         console.log("recieveed2")
